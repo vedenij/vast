@@ -10,10 +10,6 @@ The PyWorker handles:
 The model server (model_server.py) runs on port 18000 and handles GPU inference.
 """
 
-import os
-import random
-import string
-
 from vastai import Worker, WorkerConfig, HandlerConfig, LogActionConfig, BenchmarkConfig
 
 # Model server configuration
@@ -22,38 +18,12 @@ MODEL_SERVER_PORT = 18000
 MODEL_LOG_FILE = "/var/log/model/server.log"
 
 
-def generate_random_hash(length: int = 64) -> str:
-    """Generate a random hex hash for benchmarking."""
-    return ''.join(random.choices('0123456789abcdef', k=length))
-
-
-def generate_random_public_key(length: int = 64) -> str:
-    """Generate a random public key for benchmarking."""
-    return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
-
-
-def benchmark_generator() -> dict:
+def health_benchmark_generator() -> dict:
     """
-    Generate benchmark payload for /generate endpoint.
-    Used to measure throughput for autoscaling decisions.
+    Generate lightweight benchmark payload for /health endpoint.
+    This is a simple health check - no GPU computation.
     """
-    return {
-        "block_hash": generate_random_hash(),
-        "block_height": random.randint(1, 1000000),
-        "public_key": generate_random_public_key(),
-        "r_target": 1.5,
-        "batch_size": 1024,
-        "start_nonce": 0,
-        "params": {
-            "dim": 2048,
-            "n_layers": 16,
-            "n_heads": 16,
-            "n_kv_heads": 8,
-            "vocab_size": 128256,
-            "seq_len": 1024,
-            "rope_theta": 500000.0,
-        }
-    }
+    return {}
 
 
 def workload_calculator(payload: dict) -> float:
@@ -75,20 +45,28 @@ worker_config = WorkerConfig(
 
     # Request handlers
     handlers=[
-        # Main generation endpoint with benchmarking
+        # Health check with lightweight benchmark (for fast Ready state)
+        HandlerConfig(
+            route="/health",
+            allow_parallel_requests=True,  # Health checks don't block
+            max_queue_time=5.0,
+            workload_calculator=lambda p: 1.0,  # Minimal cost
+            benchmark_config=BenchmarkConfig(
+                generator=health_benchmark_generator,
+                runs=1,         # Single quick run
+                concurrency=1,  # One at a time
+            ),
+        ),
+
+        # Main generation endpoint (no benchmark - waits for orchestrator)
         HandlerConfig(
             route="/generate",
             allow_parallel_requests=False,  # PoW generation uses all GPUs
             max_queue_time=60.0,            # Reject if waiting > 60s
             workload_calculator=workload_calculator,
-            benchmark_config=BenchmarkConfig(
-                generator=benchmark_generator,
-                runs=2,        # Few runs since each takes time
-                concurrency=1,  # One request at a time
-            ),
         ),
 
-        # Warmup endpoint (no benchmarking)
+        # Warmup endpoint (waits for params from orchestrator)
         HandlerConfig(
             route="/warmup",
             allow_parallel_requests=False,
@@ -96,20 +74,12 @@ worker_config = WorkerConfig(
             workload_calculator=lambda p: 100.0,  # Fixed cost
         ),
 
-        # Pooled mode endpoint (no benchmarking)
+        # Pooled mode endpoint (managed by orchestrator)
         HandlerConfig(
             route="/pooled",
             allow_parallel_requests=False,
             max_queue_time=60.0,
             workload_calculator=lambda p: 100.0,  # Fixed cost
-        ),
-
-        # Health check (lightweight)
-        HandlerConfig(
-            route="/health",
-            allow_parallel_requests=True,  # Health checks don't block
-            max_queue_time=5.0,
-            workload_calculator=lambda p: 1.0,  # Minimal cost
         ),
     ],
 
