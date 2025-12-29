@@ -5,8 +5,8 @@ scipy>=1.14.1
 accelerate>=0.33.0  # Updated for Blackwell compatibility
 triton>=3.3.0  # Required for Blackwell tensor cores
 
-# Vast.ai SDK
-vastai
+# Vast.ai SDK (includes PyWorker: Worker, WorkerConfig, etc.)
+vastai-sdk
 
 # HTTP server for model
 aiohttp>=3.9.0
