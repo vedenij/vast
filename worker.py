@@ -1,5 +1,5 @@
 """
-Vast.ai PyWorker Configuration for PoW Generator.
+Vast.ai PyWorker Configuration for LLaMA GPU Benchmark.
 
 This file configures the Vast.ai PyWorker to proxy requests to the model server.
 The PyWorker handles:
@@ -7,7 +7,7 @@ The PyWorker handles:
 - Health checking via log monitoring
 - Benchmarking for autoscaling
 
-The model server (model_server.py) runs on port 18000 and handles actual computation.
+The model server (model_server.py) runs on port 18000 and handles GPU inference.
 """
 
 import os
@@ -115,31 +115,26 @@ worker_config = WorkerConfig(
 
     # Log-based health detection
     # PyWorker monitors the model server log file for these patterns
+    # NOTE: Patterns are PREFIX-based - must match START of log line!
     log_action_config=LogActionConfig(
-        # Model server is ready when we see "Server ready"
+        # Model server is ready when we see these patterns
         on_load=[
-            "Server ready",
-            "Starting Vast.ai Model Server",
+            "======== Running on",  # aiohttp startup message
         ],
 
         # Error patterns that indicate failure
         on_error=[
+            "Traceback (most recent call last):",
+            "Error:",
             "CUDA error",
             "RuntimeError:",
             "OutOfMemoryError",
-            "GPU INIT FAILED",
-            "Worker CUDA is broken",
-            "NotEnoughGPUResources",
-            "Traceback (most recent call last):",
         ],
 
         # Informational patterns (optional, for logging)
         on_info=[
-            "Loading model",
-            "Initializing GPU",
-            "Building base model",
-            "Detected",
-            "GPU Architecture:",
+            "INFO - Starting",
+            "INFO - Server ready",
         ],
     ),
 )
