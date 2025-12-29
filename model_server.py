@@ -753,7 +753,11 @@ def create_app() -> web.Application:
 def main():
     """Main entry point."""
     logger.info(f"Starting Vast.ai Model Server on port {SERVER_PORT}")
-    logger.info("Server ready")  # PyWorker looks for this in logs
+
+    # CRITICAL: PyWorker uses prefix-based log matching
+    # This must be a clean print (no timestamp) that STARTS with the pattern
+    # flush=True ensures immediate write to log file
+    print("Application startup complete.", flush=True)
 
     app = create_app()
     web.run_app(app, host='0.0.0.0', port=SERVER_PORT)

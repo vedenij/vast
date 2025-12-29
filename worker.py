@@ -117,9 +117,10 @@ worker_config = WorkerConfig(
     # PyWorker monitors the model server log file for these patterns
     # NOTE: Patterns are PREFIX-based - must match START of log line!
     log_action_config=LogActionConfig(
-        # Model server is ready when we see these patterns
+        # Model server is ready when we see this pattern
+        # Must match exactly what model_server.py prints (no timestamp prefix)
         on_load=[
-            "======== Running on",  # aiohttp startup message
+            "Application startup complete.",
         ],
 
         # Error patterns that indicate failure
