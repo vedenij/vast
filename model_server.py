@@ -300,7 +300,6 @@ def generation_sync(
         torch.cuda.empty_cache()
 
     except NotEnoughGPUResources as e:
-        global _cuda_broken
         _cuda_broken = True
         logger.error(f"GPU INIT FAILED: {str(e)}")
         yield {"error": str(e), "error_type": "NotEnoughGPUResources", "fatal": True}
@@ -524,7 +523,6 @@ def pooled_sync(orchestrator_url: str):
         torch.cuda.empty_cache()
 
     except NotEnoughGPUResources as e:
-        global _cuda_broken
         _cuda_broken = True
         logger.error(f"GPU INIT FAILED: {str(e)}")
         yield {"error": str(e), "error_type": "NotEnoughGPUResources", "fatal": True}
