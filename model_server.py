@@ -743,6 +743,7 @@ def create_app() -> web.Application:
     app = web.Application()
 
     app.router.add_get('/health', health_handler)
+    app.router.add_post('/health', health_handler)  # PyWorker benchmark uses POST
     app.router.add_post('/generate', generate_handler)
     app.router.add_post('/warmup', warmup_handler)
     app.router.add_post('/pooled', pooled_handler)
