@@ -804,12 +804,25 @@ async def pooled_handler(request: web.Request) -> web.StreamResponse:
 # Application Setup
 # ============================================================================
 
+async def print_ready_beacon():
+    """Print ready message periodically until PyWorker sees it.
+
+    PyWorker (vast-sdk backend.py) reads log file from beginning and looks for
+    'msg in log_line' match. It may start monitoring after our first print,
+    so we print multiple times to ensure detection.
+    """
+    # Wait for server to actually bind to port
+    await asyncio.sleep(2)
+
+    # Print ready message every 5 seconds for 60 seconds
+    for _ in range(12):
+        print("Application startup complete.", flush=True)
+        await asyncio.sleep(5)
+
+
 async def on_startup(app):
-    """Signal PyWorker that server is ready."""
-    # CRITICAL: This must be printed AFTER server starts listening
-    # PyWorker rotates log file on startup, so early messages are lost
-    # Message must START with this exact pattern (prefix-based matching)
-    print("Application startup complete.", flush=True)
+    """Start background task to signal PyWorker we're ready."""
+    asyncio.create_task(print_ready_beacon())
 
 
 def create_app() -> web.Application:
