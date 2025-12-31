@@ -38,10 +38,16 @@ from pow.compute.gpu_arch import (
 )
 from pow.models.utils import Params, get_params_with_fp8
 
-# Configure logging
+# Configure logging with immediate flush
+class FlushHandler(logging.StreamHandler):
+    def emit(self, record):
+        super().emit(record)
+        self.flush()
+
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[FlushHandler()]
 )
 logger = logging.getLogger(__name__)
 
@@ -589,15 +595,39 @@ async def generate_handler(request: web.Request) -> web.StreamResponse:
     )
     await response.prepare(request)
 
-    loop = asyncio.get_event_loop()
+    # Use queue for true streaming from thread to async
+    import queue
+    result_queue = queue.Queue()
 
     def run_generation():
-        return list(generation_sync(input_data))
+        try:
+            for result in generation_sync(input_data):
+                result_queue.put(result)
+        except Exception as e:
+            result_queue.put({"error": str(e), "error_type": type(e).__name__})
+        finally:
+            result_queue.put(None)  # Signal completion
+
+    # Start generation in thread pool
+    loop = asyncio.get_event_loop()
+    gen_task = loop.run_in_executor(_executor, run_generation)
 
     try:
-        # Run in thread pool to avoid blocking event loop
-        for result in await loop.run_in_executor(_executor, run_generation):
-            await response.write(json.dumps(result).encode() + b'\n')
+        # Stream results as they arrive
+        while True:
+            try:
+                # Check queue with timeout to allow async cancellation
+                result = await loop.run_in_executor(
+                    None, lambda: result_queue.get(timeout=1.0)
+                )
+                if result is None:  # Generation complete
+                    break
+                await response.write(json.dumps(result).encode() + b'\n')
+            except queue.Empty:
+                # No result yet, check if generation is still running
+                if gen_task.done():
+                    break
+                continue
     except Exception as e:
         logger.error(f"Generation error: {e}", exc_info=True)
         await response.write(json.dumps({"error": str(e)}).encode() + b'\n')
