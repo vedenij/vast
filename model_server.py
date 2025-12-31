@@ -563,7 +563,7 @@ async def generate_handler(request: web.Request) -> web.StreamResponse:
     """
     POST /generate - Standard PoW generation with streaming response.
 
-    Request body:
+    Request body (direct):
     {
         "block_hash": str,
         "block_height": int,
@@ -573,11 +573,23 @@ async def generate_handler(request: web.Request) -> web.StreamResponse:
         "start_nonce": int,
         "params": dict
     }
+
+    Request body (via PyWorker):
+    {
+        "auth_data": {...},
+        "payload": {<generation params>}
+    }
     """
     try:
-        input_data = await request.json()
+        data = await request.json()
     except Exception as e:
         return web.json_response({"error": f"Invalid JSON: {e}"}, status=400)
+
+    # Handle PyWorker wrapper: {auth_data, payload}
+    if "payload" in data:
+        input_data = data["payload"]
+    else:
+        input_data = data
 
     # Validate required fields
     required = ["block_hash", "block_height", "public_key", "r_target", "batch_size", "start_nonce", "params"]
@@ -640,16 +652,28 @@ async def warmup_handler(request: web.Request) -> web.StreamResponse:
     """
     POST /warmup - Warmup mode with callback polling.
 
-    Request body:
+    Request body (direct):
     {
         "callback_url": str,
         "job_id": str (optional)
     }
+
+    Request body (via PyWorker):
+    {
+        "auth_data": {...},
+        "payload": {"callback_url": str, "job_id": str}
+    }
     """
     try:
-        input_data = await request.json()
+        data = await request.json()
     except Exception as e:
         return web.json_response({"error": f"Invalid JSON: {e}"}, status=400)
+
+    # Handle PyWorker wrapper: {auth_data, payload}
+    if "payload" in data:
+        input_data = data["payload"]
+    else:
+        input_data = data
 
     callback_url = input_data.get("callback_url", "")
     job_id = input_data.get("job_id", "unknown")
@@ -724,15 +748,27 @@ async def pooled_handler(request: web.Request) -> web.StreamResponse:
     """
     POST /pooled - Orchestrator-managed pooled mode.
 
-    Request body:
+    Request body (direct):
     {
         "orchestrator_url": str
     }
+
+    Request body (via PyWorker):
+    {
+        "auth_data": {...},
+        "payload": {"orchestrator_url": str}
+    }
     """
     try:
-        input_data = await request.json()
+        data = await request.json()
     except Exception as e:
         return web.json_response({"error": f"Invalid JSON: {e}"}, status=400)
+
+    # Handle PyWorker wrapper: {auth_data, payload}
+    if "payload" in data:
+        input_data = data["payload"]
+    else:
+        input_data = data
 
     orchestrator_url = input_data.get("orchestrator_url", "")
 
