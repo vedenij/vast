@@ -105,6 +105,11 @@ worker_config = WorkerConfig(
 
 
 if __name__ == "__main__":
+    # Set fixed perf value to skip benchmark (min_load = number of workers)
+    import os
+    perf_value = os.environ.get("WORKER_PERF", "1")
+    with open("/workspace/.has_benchmark", "w") as f:
+        f.write(perf_value)
+
     # Start the PyWorker
-    # This monitors the model server log and proxies requests
     Worker(worker_config).run()
