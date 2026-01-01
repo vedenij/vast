@@ -106,9 +106,10 @@ worker_config = WorkerConfig(
 
 if __name__ == "__main__":
     # Set fixed perf value to skip benchmark (min_load = number of workers)
+    # File must be in current directory (relative path used by PyWorker)
     import os
     perf_value = os.environ.get("WORKER_PERF", "1")
-    with open("/workspace/.has_benchmark", "w") as f:
+    with open(".has_benchmark", "w") as f:
         f.write(perf_value)
 
     # Start the PyWorker
