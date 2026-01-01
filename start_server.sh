@@ -3,7 +3,7 @@
 # PyWorker is started separately by Vast.ai via PYWORKER_REPO
 
 MODEL_LOG="${MODEL_LOG:-/var/log/model/server.log}"
-WORKER_PERF="${WORKER_PERF:-500}"
+WORKER_PERF="${WORKER_PERF:-1}"
 
 # Create log directory if not exists
 mkdir -p "$(dirname "$MODEL_LOG")"

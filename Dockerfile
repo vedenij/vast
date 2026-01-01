@@ -16,7 +16,8 @@ COPY model_server.py worker.py start_server.sh /app/
 RUN mkdir -p /var/log/model
 
 # Create benchmark file with fixed perf value (skips actual benchmark)
-RUN mkdir -p /workspace && echo "500" > /workspace/.has_benchmark
+# perf=1 means min_load = number of active workers
+RUN mkdir -p /workspace && echo "1" > /workspace/.has_benchmark
 
 # Make start script executable
 RUN chmod +x /app/start_server.sh
