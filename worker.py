@@ -10,20 +10,12 @@ The PyWorker handles:
 The model server (model_server.py) runs on port 18000 and handles GPU inference.
 """
 
-from vastai import Worker, WorkerConfig, HandlerConfig, LogActionConfig, BenchmarkConfig
+from vastai import Worker, WorkerConfig, HandlerConfig, LogActionConfig
 
 # Model server configuration
 MODEL_SERVER_URL = "http://127.0.0.1"
 MODEL_SERVER_PORT = 18000
 MODEL_LOG_FILE = "/var/log/model/server.log"
-
-
-def health_benchmark_generator() -> dict:
-    """
-    Generate lightweight benchmark payload for /health endpoint.
-    This is a simple health check - no GPU computation.
-    """
-    return {}
 
 
 def workload_calculator(payload: dict) -> float:
@@ -45,20 +37,15 @@ worker_config = WorkerConfig(
 
     # Request handlers
     handlers=[
-        # Health check with lightweight benchmark (for fast Ready state)
+        # Health check endpoint
         HandlerConfig(
             route="/health",
-            allow_parallel_requests=True,  # Health checks don't block
+            allow_parallel_requests=True,
             max_queue_time=5.0,
-            workload_calculator=lambda p: 1.0,  # Minimal cost
-            benchmark_config=BenchmarkConfig(
-                generator=health_benchmark_generator,
-                runs=1,         # Single quick run
-                concurrency=1,  # One at a time
-            ),
+            workload_calculator=lambda p: 1.0,
         ),
 
-        # Main generation endpoint (no benchmark - waits for orchestrator)
+        # Main generation endpoint
         HandlerConfig(
             route="/generate",
             allow_parallel_requests=False,  # PoW generation uses all GPUs
