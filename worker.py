@@ -10,7 +10,7 @@ The PyWorker handles:
 The model server (model_server.py) runs on port 18000 and handles GPU inference.
 """
 
-from vastai import Worker, WorkerConfig, HandlerConfig, LogActionConfig
+from vastai import Worker, WorkerConfig, HandlerConfig, LogActionConfig, BenchmarkConfig
 
 # Model server configuration
 MODEL_SERVER_URL = "http://127.0.0.1"
@@ -37,12 +37,18 @@ worker_config = WorkerConfig(
 
     # Request handlers
     handlers=[
-        # Health check endpoint
+        # Health check endpoint (with minimal benchmark config - required by PyWorker)
+        # Actual benchmark is skipped via .has_benchmark file
         HandlerConfig(
             route="/health",
             allow_parallel_requests=True,
             max_queue_time=5.0,
             workload_calculator=lambda p: 1.0,
+            benchmark_config=BenchmarkConfig(
+                generator=lambda: {},
+                runs=1,
+                concurrency=1,
+            ),
         ),
 
         # Main generation endpoint

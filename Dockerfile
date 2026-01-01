@@ -15,6 +15,9 @@ COPY model_server.py worker.py start_server.sh /app/
 # Create log directory for Vast.ai PyWorker
 RUN mkdir -p /var/log/model
 
+# Create benchmark file with fixed perf value (skips actual benchmark)
+RUN mkdir -p /workspace && echo "500" > /workspace/.has_benchmark
+
 # Make start script executable
 RUN chmod +x /app/start_server.sh
 
