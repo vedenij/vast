@@ -1,9 +1,9 @@
 #!/bin/bash
 # Start model server for Vast.ai Serverless
 # PyWorker is started separately by Vast.ai via PYWORKER_REPO
+# Note: .has_benchmark is created by worker.py, not here
 
 MODEL_LOG="${MODEL_LOG:-/var/log/model/server.log}"
-WORKER_PERF="${WORKER_PERF:-1}"
 
 # Create log directory if not exists
 mkdir -p "$(dirname "$MODEL_LOG")"
@@ -12,10 +12,6 @@ mkdir -p "$(dirname "$MODEL_LOG")"
 if [ -f "$MODEL_LOG" ]; then
     mv "$MODEL_LOG" "$MODEL_LOG.old"
 fi
-
-# Set fixed performance value to skip benchmark
-# PyWorker reads this file instead of running benchmark
-echo "$WORKER_PERF" > /workspace/.has_benchmark
 
 # Start model server and log to file (PyWorker monitors this log)
 # Use > to clear log on restart (not >>), stdbuf for line-buffered output

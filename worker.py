@@ -105,12 +105,30 @@ worker_config = WorkerConfig(
 
 
 if __name__ == "__main__":
-    # Set fixed perf value to skip benchmark (min_load = number of workers)
-    # File must be in current directory (relative path used by PyWorker)
     import os
+
+    # Set fixed perf value to skip benchmark
+    # This file MUST be created BEFORE Worker.run() and in current directory
+    # backend.py uses: BENCHMARK_INDICATOR_FILE = ".has_benchmark" (relative path)
     perf_value = os.environ.get("WORKER_PERF", "1")
-    with open(".has_benchmark", "w") as f:
+    benchmark_file = ".has_benchmark"
+
+    # Log for debugging
+    cwd = os.getcwd()
+    abs_path = os.path.abspath(benchmark_file)
+    print(f"Creating {benchmark_file} with perf={perf_value} in {cwd}", flush=True)
+    print(f"Absolute path: {abs_path}", flush=True)
+
+    with open(benchmark_file, "w") as f:
         f.write(perf_value)
+
+    # Verify file was created
+    if os.path.exists(benchmark_file):
+        with open(benchmark_file, "r") as f:
+            content = f.read()
+        print(f"Verified: {benchmark_file} exists with content: {content}", flush=True)
+    else:
+        print(f"ERROR: Failed to create {benchmark_file}", flush=True)
 
     # Start the PyWorker
     Worker(worker_config).run()
